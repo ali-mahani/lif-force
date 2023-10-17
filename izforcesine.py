@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-T = 150  # Total time in ms
+T = 2000  # Total time in ms
 dt = 0.04  # Integration time step in ms
 nt = round(T/dt)  # Time steps
-N = 2000  # Number of neurons
+N = 10  # Number of neurons
 
 # Izhikevich Parameters
 C = 250  # capacitance
@@ -54,8 +54,8 @@ E = (2 * np.random.rand(N, k) - 1) * Q  # Weight matrix is OMEGA0 + E*BPhi';
 ##
 Pinv = np.eye(N) * 2  # initial correlation matrix, coefficient is the regularization constant as well
 step = 20  # optimize with RLS only every 50 steps
-imin = round(5000 / dt)  # time before starting RLS, gets the network to chaotic attractor
-icrit = round(10000 / dt)  # end simulation at this time step
+imin = round(500 / dt)  # time before starting RLS, gets the network to chaotic attractor
+icrit = round(1500 / dt)  # end simulation at this time step
 current = np.zeros((nt, k))  # store the approximant
 RECB = np.zeros((nt, 5))  # store the decoders
 REC = np.zeros((nt, 10))  # Store voltage and adaptation variables for plotting
@@ -72,8 +72,9 @@ for i in range(ilast, nt+1):
     v = v + dt*((ff*(v-vr)*(v-vt) - u + I))/C  # v(t) = v(t-1)+dt*v'(t-1)
     u = u + dt*(a*(b*(v_-vr)-u))  # same with u, the v_ term makes it so that the integration of u uses v(t-1), instead of the updated v(t)
     # index = np.where(v >= vpeak)
+    print(np.max(v))
     index = np.where(np.greater_equal(v, vpeak))[0]
-    print(f"index={index}")
+    # print(f"index={index}")
     if len(index) > 0:
         JD = np.sum(OMEGA[:, index], axis=1)  # compute the increase in current due to spiking
         tspike[ns:ns+index[0].size, :] = np.column_stack((index[0], np.zeros(index[0].size)+dt*i))  # uncomment this
@@ -101,32 +102,32 @@ for i in range(ilast, nt+1):
                 Pinv = Pinv - np.dot(cd, cd.T) / (1 + np.dot(r.T, cd))
 
 
-u = u + d*(v>=vpeak)
-v = v + (vreset-v)*(v>=vpeak)
-v_ = v
-REC[i,:] = np.concatenate((v[0:5], u[0:5]))
-current[i,:] = z
-RECB[i,:] = BPhi[0:5]
+    u = u + d*(v>=vpeak)
+    v = v + (vreset-v)*(v>=vpeak)
+    v_ = v
+    REC[i,:] = np.concatenate((v[0:5], u[0:5]), axis=None)
+    current[i,:] = z[:, 0]
+    RECB[i,:] = BPhi[0:5, i]
 
-if i % round(100/dt) == 1:
-    plt.draw()
-    gg = max(1, i - round(3000/dt))
-    plt.figure(2)
-    plt.plot(dt*(np.arange(gg, i+1))/1000, zx[:,gg:i+1], 'k', linewidth=2)
-    plt.plot(dt*(np.arange(gg, i+1))/1000, current[gg:i+1,:], 'b--', linewidth=2)
-    plt.xlabel('Time (s)')
-    plt.ylabel('$\hat{x}(t)$', interpreter='latex')
-    plt.legend(['Approximant', 'Target Signal'])
-    plt.xlim([dt*i-3000, dt*i]/1000)
-    plt.figure(3)
-    plt.plot((np.arange(1, i+1))*dt/1000, RECB[0:i+1,:])
-    plt.figure(14)
-    plt.plot(tspike[0:ns,1], tspike[0:ns,0], 'k.')
-    plt.ylim([0, 100])
+    if i % round(100/dt) == 1:
+        plt.draw()
+        gg = max(1, i - round(3000/dt))
+        plt.figure(2)
+        plt.plot(dt*(np.arange(gg, i+1))/1000, zx[:,gg:i+1], 'k', linewidth=2)
+        plt.plot(dt*(np.arange(gg, i+1))/1000, current[gg:i+1,:], 'b--', linewidth=2)
+        plt.xlabel('Time (s)')
+        plt.ylabel('$\hat{x}(t)$', interpreter='latex')
+        plt.legend(['Approximant', 'Target Signal'])
+        plt.xlim([dt*i-3000, dt*i]/1000)
+        plt.figure(3)
+        plt.plot((np.arange(1, i+1))*dt/1000, RECB[0:i+1,:])
+        plt.figure(14)
+        plt.plot(tspike[0:ns,1], tspike[0:ns,0], 'k.')
+        plt.ylim([0, 100])
 
-tspike = tspike[tspike[:,1] != 0,:]
-M = tspike[tspike[:,1] > dt*icrit]
-AverageFiringRate = 1000*len(M)/(N*(T-dt*icrit))
+    tspike = tspike[tspike[:,1] != 0,:]
+    M = tspike[tspike[:,1] > dt*icrit]
+    AverageFiringRate = 1000*len(M)/(N*(T-dt*icrit))
 
 plt.figure(30)
 for j in range(1, 6):
