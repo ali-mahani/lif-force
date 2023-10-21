@@ -105,25 +105,25 @@ for i in range(ilast, nt+1):
     u = u + d*(v>=vpeak)
     v = v + (vreset-v)*(v>=vpeak)
     v_ = v
-    REC[i,:] = np.concatenate((v[0:5], u[0:5]), axis=None)
+    REC[i,:] = np.concatenate((v[0:5, 0], u[0:5, 0]), axis=0)
     current[i,:] = z[:, 0]
     RECB[i,:] = BPhi[0:5, i]
 
-    if i % round(100/dt) == 1:
-        plt.draw()
-        gg = max(1, i - round(3000/dt))
-        plt.figure(2)
-        plt.plot(dt*(np.arange(gg, i+1))/1000, zx[gg:i+1], 'k', linewidth=2)
-        plt.plot(dt*(np.arange(gg, i+1))/1000, current[gg:i+1,:], 'b--', linewidth=2)
-        plt.xlabel('Time (s)')
-        plt.ylabel(r'$\hat{x}(t)$')
-        plt.legend(['Approximant', 'Target Signal'])
-        plt.xlim(np.array([dt*i-3000, dt*i])/1000)
-        plt.figure(3)
-        plt.plot((np.arange(0, i+1))*dt/1000, RECB[0:i+1,:])
-        plt.figure(14)
-        plt.plot(tspike[0:ns,1], tspike[0:ns,0], 'k.')
-        plt.ylim([0, 100])
+    # if i % round(100/dt) == 1:
+    #     plt.draw()
+    #     gg = max(1, i - round(3000/dt))
+    #     plt.figure(2)
+    #     plt.plot(dt*(np.arange(gg, i+1))/1000, zx[gg:i+1], 'k', linewidth=2)
+    #     plt.plot(dt*(np.arange(gg, i+1))/1000, current[gg:i+1,:], 'b--', linewidth=2)
+    #     plt.xlabel('Time (s)')
+    #     plt.ylabel(r'$\hat{x}(t)$')
+    #     plt.legend(['Approximant', 'Target Signal'])
+    #     plt.xlim(np.array([dt*i-3000, dt*i])/1000)
+    #     plt.figure(3)
+    #     plt.plot((np.arange(0, i+1))*dt/1000, RECB[0:i+1,:])
+    #     plt.figure(14)
+    #     plt.plot(tspike[0:ns,1], tspike[0:ns,0], 'k.')
+    #     plt.ylim([0, 100])
 
     tspike = tspike[tspike[:,1] != 0,:]
     M = tspike[tspike[:,1] > dt*icrit]
