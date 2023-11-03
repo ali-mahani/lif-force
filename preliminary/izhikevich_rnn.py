@@ -99,7 +99,7 @@ class Izhikevich:
         Randomly choose a neuron and return its voltage trace.
         And return its spike times.
         """
-        n_neurons = 10
+        n_neurons = 1
         random_neuron = np.random.randint(0, self._N, size=(n_neurons, ))
         voltage_trace = np.zeros(shape=(self.time.size, n_neurons), dtype=float)
         
