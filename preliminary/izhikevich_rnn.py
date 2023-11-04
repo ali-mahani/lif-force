@@ -10,7 +10,7 @@ class Izhikevich:
     def __init__(self, C:float=250, v_r:float=-60, v_t:float=-20, b:float=0,
                  v_peak:float=35, v_reset:float=-65, a:float=0.01, d:float=200,
                  I_BIAS:float=1000, k:float=2.5, tau_r:float=2, tau_d:float=20,
-                 dt:float=1e-4, T:float=5e3, g:float=3, N:int=1000, p:float=1.0) -> None:
+                 dt:float=.04, T:float=5e3, g:float=5e3, N:int=1000, p:float=1.0) -> None:
         """Initialize the system with corresponding parameters.
 
         Parameters
@@ -68,9 +68,10 @@ class Izhikevich:
         self._T = T
         self.time = np.arange(0, T, dt)
         self._N = N
-        self._g = g
+        self._G = g
         self._p = p
-        self._w = np.random.normal(loc=0, scale=g**2/(N*p), size=(N, N))    # weight matrix. Constant for now.
+        self._w = self._G * np.random.randn(N, N) \
+            * (np.random.rand(N, N)<p) / (p*np.sqrt(N))    # weight matrix. Constant for now.
         self.v = v_r + (v_peak - v_r) * np.random.rand(N, 1)    # Voltage of all neurons
         self.u = np.zeros(shape=(N, 1), dtype=float)    # Adaptation parameter
         self.s = np.zeros(shape=(N, 1), dtype=float)    # Synaptic filter
@@ -115,7 +116,8 @@ class Izhikevich:
             self.v[spike_mask] = self.v_reset
             self.u[spike_mask] += self.d
             self.h[spike_mask] += 1 / (self.tau_d * self.tau_r)
-            self.s = self._w @ self.r
+            # self.s = self._w @ self.r
+            self.s = np.random.rand(self._N, 1) * self._G * self._p
 
             if True in spike_mask:
                 spiking_neurons = np.where(spike_mask)[0]
@@ -130,7 +132,8 @@ class Izhikevich:
 def main():
     """Main body to test the code
     """
-    network = Izhikevich(N=20, T=100, I_BIAS=4000)
+    np.random.seed(2023)
+    network = Izhikevich(N=2000, T=2000, I_BIAS=1000)
     voltage_trace = network.render()
     
     plt.plot(network.time, voltage_trace)
