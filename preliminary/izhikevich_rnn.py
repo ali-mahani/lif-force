@@ -10,7 +10,7 @@ class Izhikevich:
     def __init__(self, C:float=250, v_r:float=-60, v_t:float=-20, b:float=0,
                  v_peak:float=35, v_reset:float=-65, a:float=0.01, d:float=200,
                  I_BIAS:float=1000, k:float=2.5, tau_r:float=2, tau_d:float=20,
-                 dt:float=.04, T:float=5e3, g:float=5e3, N:int=1000, p:float=1.0) -> None:
+                 dt:float=.04, T:float=5e3, g:float=3e3, N:int=1000, p:float=1.0) -> None:
         """Initialize the system with corresponding parameters.
 
         Parameters
@@ -45,7 +45,7 @@ class Izhikevich:
         T : float, optional
             Duration of the simulation in [ms], by default 5e3
         g : float, optional
-            Gain on the static weight matrix, by default 3
+            Gain on the static weight matrix, by default 3000
         N : int, optional
             Number of neurons in SRNN, by default 1000
         p : float, optional
@@ -112,11 +112,12 @@ class Izhikevich:
             self.h += self._dt * self._h_dot()
             
             # Set the spiking rules
-            spike_mask = (self.v > self.v_peak)
+            spike_mask = (self.v >= self.v_peak)
             self.v[spike_mask] = self.v_reset
             self.u[spike_mask] += self.d
             self.h[spike_mask] += 1 / (self.tau_d * self.tau_r)
             # self.s = self._w @ self.r
+            # JD = np.sum(self._w[:, spike_mask], axis=1)
             self.s = np.random.rand(self._N, 1) * self._G * self._p
 
             if True in spike_mask:
