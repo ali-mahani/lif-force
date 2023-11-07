@@ -100,8 +100,8 @@ class Izhikevich:
         Randomly choose a neuron and return its voltage trace.
         And return its spike times.
         """
-        n_neurons = 1
-        random_neuron = np.random.randint(0, self._N, size=(n_neurons, ))
+        n_neurons = 100
+        # random_neuron = np.random.randint(0, self._N, size=(n_neurons, ))
         voltage_trace = np.zeros(shape=(self.time.size, n_neurons), dtype=float)
         
         for i in tqdm(range(len(self.time))):
@@ -116,9 +116,9 @@ class Izhikevich:
             self.v[spike_mask] = self.v_reset
             self.u[spike_mask] += self.d
             self.h[spike_mask] += 1 / (self.tau_d * self.tau_r)
-            # self.s = self._w @ self.r
+            self.s = self._w @ self.r
             # JD = np.sum(self._w[:, spike_mask], axis=1)
-            self.s = np.random.rand(self._N, 1) * self._G * self._p
+            # self.s = np.random.rand(self._N, 1) * self._G * self._p
 
             if True in spike_mask:
                 spiking_neurons = np.where(spike_mask)[0]
@@ -126,7 +126,8 @@ class Izhikevich:
                     self.tspike[neuron].append(self.time[i])
 
             # record
-            voltage_trace[i] = self.v[random_neuron, 0]
+            voltage_trace[i] = self.v[0:100, 0]
+
         
         return voltage_trace
 
