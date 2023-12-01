@@ -77,6 +77,7 @@ class Izhikevich:
         self.s = np.zeros(shape=(N, 1), dtype=float)    # Synaptic filter
         self.r = np.zeros(shape=(N, 1), dtype=float)    # spike rate
         self.h = np.zeros(shape=(N, 1), dtype=float)    # Synaptic filter
+        self.wh = np.zeros(shape=(N, 1), dtype=float)   # w @ h
         # Record the spike times of the system
         self.tspike = []
         for i in range(self._N):
@@ -95,6 +96,9 @@ class Izhikevich:
     def _h_dot(self):
         return -self.h / self.tau_r
     
+    def _wh_dot(self):
+        return - self.wh / self.tau_r
+    
     def render(self):
         """Simulate the system.
         Randomly choose a neuron and return its voltage trace.
@@ -110,21 +114,26 @@ class Izhikevich:
             self.v = v_new
             self.r += self._dt * self._r_dot()
             self.h += self._dt * self._h_dot()
+            self.wh += self._dt * self._wh_dot()
             
             # Set the spiking rules
             spike_mask = (self.v >= self.v_peak)
             self.v[spike_mask] = self.v_reset
             self.u[spike_mask] += self.d
             self.h[spike_mask] += 1 / (self.tau_d * self.tau_r)
-            self.s = self._w @ self.r
-            # JD = np.sum(self._w[:, spike_mask], axis=1)
+            
+            
             # self.s = np.random.rand(self._N, 1) * self._G * self._p
 
             if True in spike_mask:
                 spiking_neurons = np.where(spike_mask)[0]
+                JD = np.sum(self._w[:, spiking_neurons], axis=1)
+                self.wh += JD / (self.tau_r * self.tau_d)
                 for neuron in spiking_neurons:
                     self.tspike[neuron].append(self.time[i])
 
+            self.s = self.s * np.exp(-self._dt / self.tau_d) + self.wh * self._dt
+            
             # record
             voltage_trace[i] = self.v[0:100, 0]
 
