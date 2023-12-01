@@ -99,13 +99,14 @@ class Izhikevich:
     def _wh_dot(self):
         return - self.wh / self.tau_r
     
-    def render(self):
+    def render(self, n_neurons:int):
         """Simulate the system.
         Randomly choose a neuron and return its voltage trace.
         And return its spike times.
         """
-        n_neurons = 100
-        # random_neuron = np.random.randint(0, self._N, size=(n_neurons, ))
+        if n_neurons > self._N:
+            raise ValueError(f"n_neurons = {n_neurons} should be less than or equal to {self._N}")
+        random_neuron = np.random.choice(a=self._N, size=n_neurons, replace=False)
         voltage_trace = np.zeros(shape=(self.time.size, n_neurons), dtype=float)
         
         for i in tqdm(range(len(self.time))):
@@ -127,7 +128,8 @@ class Izhikevich:
 
             if True in spike_mask:
                 spiking_neurons = np.where(spike_mask)[0]
-                JD = np.sum(self._w[:, spiking_neurons], axis=1)
+                JD = np.sum(self._w[:, spiking_neurons], axis=1).reshape(-1, 1)
+                # print(JD.shape)
                 self.wh += JD / (self.tau_r * self.tau_d)
                 for neuron in spiking_neurons:
                     self.tspike[neuron].append(self.time[i])
@@ -135,7 +137,7 @@ class Izhikevich:
             self.s = self.s * np.exp(-self._dt / self.tau_d) + self.wh * self._dt
             
             # record
-            voltage_trace[i] = self.v[0:100, 0]
+            voltage_trace[i] = self.v[random_neuron, 0]
 
         
         return voltage_trace
