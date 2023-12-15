@@ -107,11 +107,7 @@ class Izhikevich:
     def _wh_dot(self):
         return - self.wh / self.tau_r
     
-<<<<<<< HEAD
-    def render(self, rls_start, rls_stop, rls_step):
-=======
-    def render(self, n_neurons:int):
->>>>>>> e409526dec303a148cf6906e3203342ddcac7622
+    def render(self, rls_start, rls_stop, rls_step, n_neurons):
         """Simulate the system.
         Randomly choose a neuron and return its voltage trace.
         And return its spike times.
