@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 class Izhikevich:
-    def __init__(self, C:float=250, v_r:float=-60, v_t:float=-20, b:float=0,
+    def __init__(self, supervisor:np.ndarray, C:float=250, v_r:float=-60, v_t:float=-20, b:float=0,
                  v_peak:float=35, v_reset:float=-65, a:float=0.01, d:float=200,
                  I_BIAS:float=1000, k:float=2.5, tau_r:float=2, tau_d:float=20,
-                 dt:float=.04, T:float=5e3, g:float=3e3, N:int=1000, p:float=1.0) -> None:
+                 dt:float=.04, T:float=5e3, g:float=3e3, N:int=1000, p:float=1.0, l:float=2) -> None:
         """Initialize the system with corresponding parameters.
 
         Parameters
@@ -82,6 +82,14 @@ class Izhikevich:
         self.tspike = []
         for i in range(self._N):
             self.tspike.append([])
+        # Configs for RLS
+        self.l = l
+        self.supervisor = supervisor
+        k = min(supervisor.shape)
+        self.phi = np.zeros(shape=(self._N, k), dtype=float)
+        self.Pinv = np.eye(self._N) * self.l
+        self.x_hat = self.phi.T @ self.r
+        self.x_hat_rec = np.zeros((self.time.size, self.x_hat.size), dtype=float)
         
     def _v_dot(self):
         return (self.k * (self.v - self.v_r) * (self.v - self.v_t) \
@@ -99,7 +107,7 @@ class Izhikevich:
     def _wh_dot(self):
         return - self.wh / self.tau_r
     
-    def render(self):
+    def render(self, rls_start, rls_stop, rls_step):
         """Simulate the system.
         Randomly choose a neuron and return its voltage trace.
         And return its spike times.
@@ -107,7 +115,10 @@ class Izhikevich:
         n_neurons = 100
         # random_neuron = np.random.randint(0, self._N, size=(n_neurons, ))
         voltage_trace = np.zeros(shape=(self.time.size, n_neurons), dtype=float)
-        
+        # Setup for RLS
+        rls_start = int(rls_start // self._dt)
+        rls_stop = int(rls_stop // self._dt)
+        # Rendering loop
         for i in tqdm(range(len(self.time))):
             v_new = self.v + self._dt * self._v_dot()
             self.u += self._dt * self._u_dot()
@@ -115,16 +126,14 @@ class Izhikevich:
             self.r += self._dt * self._r_dot()
             self.h += self._dt * self._h_dot()
             self.wh += self._dt * self._wh_dot()
-            
+
             # Set the spiking rules
             spike_mask = (self.v >= self.v_peak)
             self.v[spike_mask] = self.v_reset
             self.u[spike_mask] += self.d
             self.h[spike_mask] += 1 / (self.tau_d * self.tau_r)
             
-            
-            # self.s = np.random.rand(self._N, 1) * self._G * self._p
-
+        
             if True in spike_mask:
                 spiking_neurons = np.where(spike_mask)[0]
                 JD = np.sum(self._w[:, spiking_neurons], axis=1)
@@ -133,12 +142,31 @@ class Izhikevich:
                     self.tspike[neuron].append(self.time[i])
 
             self.s = self.s * np.exp(-self._dt / self.tau_d) + self.wh * self._dt
+
+            # RLS for FORCE
+            self.x_hat = self.phi.T @ self.r
+            self.x_hat_rec[i] = self.x_hat
+            
+            if i > rls_start and i < rls_stop:
+                if i % rls_step == 0:
+                    self.rls()
             
             # record
             voltage_trace[i] = self.v[0:100, 0]
 
         
         return voltage_trace
+    
+    def rls(self, i):
+        """Run the system with the force method. Return the final decoder
+        """
+        error = self.x_hat - self.supervisor[i]
+        q = self.Pinv @ self.r
+        self.Pinv -= (q @ q.T) / (1 + self.r.T @ q)
+        self.phi -= (self.Pinv @ self.r * error)
+        
+        
+        
 
 def main():
     """Main body to test the code
