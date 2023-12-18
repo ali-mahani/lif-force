@@ -151,7 +151,7 @@ class Izhikevich:
             
             if i > rls_start and i < rls_stop:
                 if i % rls_step == 0:
-                    self.rls()
+                    self.rls(i)
             
             # record
             voltage_trace[i] = self.v[random_neuron, 0]
@@ -165,7 +165,7 @@ class Izhikevich:
         error = self.x_hat - self.supervisor[i]
         q = self.Pinv @ self.r
         self.Pinv -= (q @ q.T) / (1 + self.r.T @ q)
-        self.phi -= (self.Pinv @ self.r * error)
+        self.phi -= (self.Pinv @ self.r * error.T)
         
         
         
