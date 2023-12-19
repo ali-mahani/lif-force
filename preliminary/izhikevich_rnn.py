@@ -147,7 +147,7 @@ class Izhikevich:
 
             # RLS for FORCE
             self.x_hat = self.phi.T @ self.r
-            self.x_hat_rec[i] = self.x_hat
+            self.x_hat_rec[i] = self.x_hat.flatten()
             
             if i > rls_start and i < rls_stop:
                 if i % rls_step == 0:
@@ -162,10 +162,10 @@ class Izhikevich:
     def rls(self, i):
         """Run the system with the force method. Return the final decoder
         """
-        error = self.x_hat - self.supervisor[i]
+        error = self.x_hat - self.supervisor[i].reshape(-1, 1)
         q = self.Pinv @ self.r
         self.Pinv -= (q @ q.T) / (1 + self.r.T @ q)
-        self.phi -= (self.Pinv @ self.r * error.T)
+        self.phi -= (q @ error.T)
         
         
         
@@ -173,11 +173,25 @@ class Izhikevich:
 def main():
     """Main body to test the code
     """
-    np.random.seed(2023)
-    network = Izhikevich(N=2000, T=2000, I_BIAS=1000)
-    voltage_trace = network.render()
+    from test_models import LorenzAttractor
     
-    plt.plot(network.time, voltage_trace)
+    np.random.seed(2023)
+    
+    T = 2000
+    dt = 4e-2
+    init = np.array([0., 1., 1.05], dtype=float).reshape(-1, 1)
+    lorenz = LorenzAttractor(xyz=init)
+    conversion_factor = 1/10
+    time, xyz = lorenz.render(T=T*conversion_factor, dt=dt*conversion_factor)
+    
+    plt.plot(xyz[:, 0], xyz[:, 1], lw=.5)
+    plt.show()
+    
+    model = Izhikevich(supervisor=xyz, T=T, dt=dt, N=2000)
+    voltage_trace = model.render(rls_start=2, rls_stop=T/2, rls_step=2, n_neurons=10)
+    
+    plt.plot(xyz[:, 0], xyz[:, 1], lw=.5)
+    plt.plot(model.x_hat_rec[:, 0], model.x_hat_rec[:, 1], lw=.5)
     plt.show()
 
 if __name__ == "__main__":
