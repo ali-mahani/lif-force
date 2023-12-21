@@ -10,7 +10,8 @@ class Izhikevich:
     def __init__(self, supervisor:np.ndarray, C:float=250, v_r:float=-60, v_t:float=-20, b:float=0,
                  v_peak:float=35, v_reset:float=-65, a:float=0.01, d:float=200,
                  I_BIAS:float=1000, k:float=2.5, tau_r:float=2, tau_d:float=20,
-                 dt:float=.04, T:float=5e3, g:float=3e3, N:int=1000, p:float=1.0, l:float=2) -> None:
+                 dt:float=.04, T:float=5e3, g:float=3e3, N:int=1000, p:float=1.0, 
+                 l:float=2, Q:float=5e3) -> None:
         """Initialize the system with corresponding parameters.
 
         Parameters
@@ -51,6 +52,11 @@ class Izhikevich:
         p : float, optional
             Sparsity coefficient, between 0 and 1 where 1 means fully 
             connected, by default 1.0
+        Q : float, optional
+            Gain on the rank-k perturbation modified by RLS.
+            Note that the units of this have to be in [pA], by default 5e3
+        l : float, optional
+            Ridge Regularization parameter lambda, by default 2.0
         """
         self.C = C
         self.v_r = v_r
@@ -69,6 +75,7 @@ class Izhikevich:
         self.time = np.arange(0, T, dt)
         self._N = N
         self._G = g
+        self._Q = Q
         self._p = p
         self._w = self._G * np.random.randn(N, N) \
             * (np.random.rand(N, N)<p) / (p*np.sqrt(N))    # weight matrix. Constant for now.
@@ -85,15 +92,25 @@ class Izhikevich:
         # Configs for RLS
         self.l = l
         self.supervisor = supervisor
-        k = min(supervisor.shape)
-        self.phi = np.zeros(shape=(self._N, k), dtype=float)
+        dim = min(supervisor.shape)
+        self.phi = np.zeros(shape=(self._N, dim), dtype=float)
+        self.eta = (2 * np.random.rand(N, dim) - 1) * Q
         self.Pinv = np.eye(self._N) * self.l
         self.x_hat = self.phi.T @ self.r
         self.x_hat_rec = np.zeros((self.time.size, self.x_hat.size), dtype=float)
+        self.ipsc = np.zeros(shape=(N, 1), dtype=float)
         
+    def _calc_ipsc(self):
+        """Calculate the total post-synaptic current.
+        It is a combination of bias current, the encoding of the output 
+        and the synaptic potential of the network.
+        """
+        self.ipsc = self.I_BIAS + self.s + self.eta @ self.x_hat
+    
     def _v_dot(self):
+        self._calc_ipsc()   # update the post-synaptic current
         return (self.k * (self.v - self.v_r) * (self.v - self.v_t) \
-            - self.u + self.I_BIAS + self.s) / self.C
+            - self.u + self.ipsc) / self.C
         
     def _u_dot(self):
         return self.a * (self.b * (self.v - self.v_r) - self.u)
