@@ -187,6 +187,9 @@ class Izhikevich:
         
         
 
+def z_transform(signal):
+    return (signal - signal.mean(axis=0)) / signal.std(axis=0)
+
 def main():
     """Main body to test the code
     """
@@ -194,22 +197,62 @@ def main():
     
     np.random.seed(2023)
     
-    T = 2000
+    T = 15000
     dt = 4e-2
-    init = np.array([0., 1., 1.05], dtype=float).reshape(-1, 1)
-    lorenz = LorenzAttractor(xyz=init)
-    conversion_factor = 1/10
-    time, xyz = lorenz.render(T=T*conversion_factor, dt=dt*conversion_factor)
-    
-    plt.plot(xyz[:, 0], xyz[:, 1], lw=.5)
+    t = np.arange(0, T, dt)
+
+    x = np.sin(2 * 5 * np.pi * t / 1000)
+    x = x.reshape(-1, 1)
+
+    signal = z_transform(x)
+
+    plt.plot(t, signal[:, 0], lw=.5)
     plt.show()
     
-    model = Izhikevich(supervisor=xyz, T=T, dt=dt, N=2000)
-    voltage_trace = model.render(rls_start=2, rls_stop=T/2, rls_step=2, n_neurons=10)
-    
-    plt.plot(xyz[:, 0], xyz[:, 1], lw=.5)
-    plt.plot(model.x_hat_rec[:, 0], model.x_hat_rec[:, 1], lw=.5)
+    params = {
+        "N": 2000,
+        "C": 250,
+        "v_r": -60,
+        "v_t": -60 + 40 - (-2 / 2.5), # v_t = v_r + 40 - (b / k)
+        "k": 2.5,
+        "b": -2,
+        "v_peak": 30,
+        "v_reset": -65,
+        "a": 0.01,
+        "d": 200,
+        "tau_r": 2,
+        "tau_d": 20,
+        "p": 0.1,
+        "g": 5e3,
+        "Q": 5e3,
+        "I_BIAS": 1000,
+        "l": 2,       
+    }
+    model = Izhikevich(supervisor=signal, T=T, dt=dt, **params)
+    voltage_trace = model.render(rls_start=5000, rls_stop=10000, rls_step=2, n_neurons=10)
+    # plot the decoded signal vs the original input
+    plt.plot(t, signal[:, 0], lw=.5)
+    plt.plot(t, model.x_hat_rec[:, 0], lw=.5)
+    plt.savefig("img/sin/output.jpg", dpi=200, bbox_inches="tight")
     plt.show()
+    
+    # plot the spikes
+    plt.eventplot(model.tspike)
+    plt.savefig("img/sin/rasterplot.jpg", dpi=200, bbox_inches="tight")
+    plt.show()
+    
+    # plot the voltage trace of random neurons
+    fig = plt.figure(31)
+    ax = fig.add_subplot()
+    for i in range(voltage_trace.shape[-1]):
+        signal = voltage_trace[:, i]
+        minim = np.min(signal)
+        maxim = np.max(signal)
+        signal = (signal - minim) / (maxim - minim) + i
+        ax.plot(t, signal)
+    plt.savefig("img/sin/voltage_trace.jpg", dpi=200, bbox_inches="tight")
+    plt.show()
+    
 
 if __name__ == "__main__":
     main()
