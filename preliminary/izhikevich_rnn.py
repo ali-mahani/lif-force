@@ -229,7 +229,7 @@ def main():
         "l": 2,       
     }
     model = Izhikevich(supervisor=signal, T=T, dt=dt, **params)
-    voltage_trace = model.render(rls_start=5000, rls_stop=10000, rls_step=2, n_neurons=10)
+    voltage_trace = model.render(rls_start=5000, rls_stop=10000, rls_step=20, n_neurons=10)
     # plot the decoded signal vs the original input
     plt.plot(t, signal[:, 0], lw=.5)
     plt.plot(t, model.x_hat_rec[:, 0], lw=.5)
