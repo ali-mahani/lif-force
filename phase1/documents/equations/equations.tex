@@ -17,7 +17,8 @@
 	The equations from the lecture series for the Morris Lecar model are as follows:
 	\begin{equation}
 		\begin{aligned}
-			C\dv{V_i}{t} &= I - g_L(V_i - E_L) = g_K n_i (V_i - E_K) - g_{Ca} m_\infty(V_i) (V_i - E_{Ca}) - \bar{g}_{ij} s_j(t) (V_i - E_s)\\
+			C\dv{V_i}{t} &= I - g_L(V_i - E_L) = g_K n_i (V_i - E_K) - g_{Ca} m_\infty(V_i) (V_i - E_{Ca}) + I_{psp, i}\\
+			I_{psp, i} &= -\sum_{j=1}^{N} \bar{g}_{ij} s_j(t) (V_i - E_{ij})\\
 			\dv{n_i}{t} &= \left[\frac{n_\infty(V_i) - n_i}{\tau_n(V_i)}\right]\\
 			m_\infty(V_i) &= \frac{1}{2} \left[1 + \tanh(\frac{V_i - V_1}{V_2})\right]\\
 			n_\infty(V_i) &= \frac{1}{2} \left[1 + \tanh(\frac{V_i - V_3}{V_4})\right]\\
@@ -25,6 +26,15 @@
 			\dv{s_i}{t} &= a_r T(V_i)(1 - s_i) - a_d s_i\\
 			T(V_i) &= \frac{T_{max}}{1 + \exp(-\frac{V_i - V_T}{K_p})}					
 		\end{aligned}
+	\end{equation}
+	where 
+	\begin{equation}
+		E_{ij} = \{E_+, E_-\}
+	\end{equation}
+	for $E_+$ for AMPA and $E_-$ for GABA.
+	and 
+	\begin{equation}
+		E_{ij} = E_{kj}, \qquad \forall i,j,k \le N
 	\end{equation}
 	where the following \textbf{variables}
 	\begin{itemize}
@@ -43,5 +53,10 @@
 		\item $V_T = 2, K_p = 5 mV, T_{max} = 1$: Tuning parameters for the post-synaptic potential.
 		\item $\bar{g}_{ij}$: weight matrix taken randomly from a normal distribution. Details to follow.
 	\end{itemize}
+	
+	In vector form, the post-synaptic potential becomes
+	\begin{equation}
+		\vec{I}_{psp} = \left(\mathbf{\bar{g}}\ + \mathbf{\hat{\eta}}.\mathbf{\hat{\phi}}^\intercal\right) \otimes (\vec{V}.\mathbf{1}^\intercal - \mathbf{\hat{E}}).\vec{s}(t)
+	\end{equation}
 	
 \end{document}
