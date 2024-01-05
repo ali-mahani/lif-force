@@ -40,7 +40,7 @@ class MorrisLecar:
         
         # Network connections
         self.v = np.zeros(shape=(N, 1), dtype=float)
-        self.w = np.random.normal(loc=0, scale=1/np.sqrt(N))
+        self.w = np.random.normal(loc=0, scale=1/np.sqrt(N)) * 50
         self.s = np.zeros(shape=(N, 1), dtype=float)
         self.n = np.zeros(shape=(N, 1), dtype=float)
         self.E = np.random.choice(a=[self._E_AMPA, self._E_GABA], size=(N, ))
